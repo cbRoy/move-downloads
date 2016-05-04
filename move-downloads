@@ -1,0 +1,50 @@
+#!/bin/bash
+input_dir='/home/chris/Downloads/'
+output_base='/home/chris/Videos/'
+output_dir='Shows'
+
+while [ "$1" != "" ]; do
+	case $1 in
+		-s | --shows ) output_dir='Shows' ;;
+		-m | --movies ) output_dir='Movies' ;;
+	esac
+	shift
+done
+
+output_dir="$output_base"/"$output_dir"
+
+moves=`mv -v $input_dir/{*,*/*}.{mp4,avi} "$output_dir" 2>/dev/null`
+#echo "$moves"
+#echo '-------------------------------------------'
+
+if [ -z "$moves" ]; then
+	echo 'No Files Found!';
+	exit 0;
+fi
+
+files=`echo "$moves" | sed -e "s/ -> /,/g;s/[‘’]//g;" | cut -d ',' -f 1`
+#echo "$files"
+#echo '-------------------------------------------'
+
+readarray -t files <<< "$files"
+
+prev_dir='';
+for filename in "${files[@]}"
+  do
+    file=$(basename "$filename")
+    dir=$(dirname "$filename")
+
+    if [ ! "$prev_dir" == "$dir" ]; then
+      if [ -d "$prev_dir" ]; then
+		gvfs-trash "$prev_dir";
+		echo "Trashed $prev_dir."
+      fi
+      echo "From directory: $dir"
+    fi
+    echo "    Moved $file."
+    prev_dir="$dir"
+  done
+  if [ -d "$prev_dir" ]; then
+	gvfs-trash "$dir";
+	echo "Trashed $prev_dir."
+  fi
